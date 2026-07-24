@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>edge-tts-rs — command builder</title>
+<meta name="description" content="Build a copy-pasteable uvx command for edge-tts-rs, a from-scratch client for Microsoft Edge's TTS protocol.">
+
+<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+<style type="text/tailwindcss">
+  .font-mono-ui { font-family: "SFMono-Regular", Menlo, Consolas, "IBM Plex Mono", monospace; }
+  #cmd-out { white-space: pre; overflow-x: auto; scrollbar-width: thin; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body class="bg-base-200 text-base-content min-h-screen">
+
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 pb-20 flex flex-col gap-8">
+
+  <header class="flex flex-col gap-2">
+    <div class="flex items-center justify-between">
+      <span class="font-mono-ui text-xs tracking-widest uppercase text-base-content/60">edge-tts-rs · command builder</span>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <span class="font-mono-ui text-xs text-base-content/60">light</span>
+        <input type="checkbox" id="theme-toggle" class="toggle toggle-sm" aria-label="Toggle dark mode">
+        <span class="font-mono-ui text-xs text-base-content/60">dark</span>
+      </label>
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight" style="text-wrap:balance">
+      Craft your <span class="font-mono-ui text-primary">tts</span> command
+    </h1>
+    <p class="text-base-content/60 max-w-prose">
+      Pick a voice, tune the delivery, and copy a ready-to-run
+      <code class="font-mono-ui">uvx</code> command — no install, no config file.
+    </p>
+    <nav class="flex gap-5 font-mono-ui text-sm pt-1">
+      <a class="link link-hover" href="https://github.com/dev-ansung/edge-tts-rs">Repository ↗</a>
+      <a class="link link-hover" href="https://github.com/dev-ansung/edge-tts-rs/blob/main/ARCHITECTURE.md">How it works ↗</a>
+    </nav>
+  </header>
+
+  <hr class="border-base-300" aria-hidden="true">
+
+  <div class="card bg-base-100 border border-base-300 shadow-sm sticky top-3 z-10">
+    <div class="card-body p-4 gap-2">
+      <div class="flex items-center justify-between font-mono-ui text-xs tracking-widest uppercase text-base-content/60">
+        <span>Your command</span>
+        <span id="cmd-status" class="normal-case tracking-normal"></span>
+      </div>
+      <div class="flex gap-2 items-stretch">
+        <div id="cmd-out" class="font-mono-ui text-sm flex-1 bg-base-200 border border-base-300 rounded-lg px-3 py-2"></div>
+        <button class="btn btn-primary font-mono-ui" id="copy-btn" type="button">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body gap-4">
+      <h2 class="text-xs tracking-widest uppercase text-base-content/60 font-semibold">What to say</h2>
+      <label class="form-control w-full">
+        <span class="label-text font-semibold text-sm mb-1">Text</span>
+        <input type="text" id="text-input" value="Hello, world!" maxlength="500" autocomplete="off"
+               class="input input-bordered w-full">
+      </label>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body gap-4">
+      <h2 class="text-xs tracking-widest uppercase text-base-content/60 font-semibold">Voice</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label class="form-control w-full">
+          <span class="label-text font-semibold text-sm mb-1">Language</span>
+          <select id="lang-select" class="select select-bordered w-full font-mono-ui text-sm"></select>
+        </label>
+        <label class="form-control w-full">
+          <span class="label-text font-semibold text-sm mb-1">Voice</span>
+          <select id="voice-select" class="select select-bordered w-full font-mono-ui text-sm"></select>
+        </label>
+      </div>
+      <div id="voice-meta" class="font-mono-ui text-xs text-base-content/60 min-h-[1em]"></div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body gap-5">
+      <h2 class="text-xs tracking-widest uppercase text-base-content/60 font-semibold">Delivery</h2>
+
+      <div class="grid items-center gap-3" style="grid-template-columns: 90px 1fr 56px;">
+        <label for="rate" class="text-sm font-semibold">Rate</label>
+        <input type="range" id="rate" min="-50" max="50" value="0" step="5" class="range range-primary range-sm">
+        <output id="rate-out" class="font-mono-ui text-sm text-base-content/60 text-right tabular-nums">+0%</output>
+      </div>
+      <div class="grid items-center gap-3" style="grid-template-columns: 90px 1fr 56px;">
+        <label for="volume" class="text-sm font-semibold">Volume</label>
+        <input type="range" id="volume" min="-50" max="50" value="0" step="5" class="range range-primary range-sm">
+        <output id="volume-out" class="font-mono-ui text-sm text-base-content/60 text-right tabular-nums">+0%</output>
+      </div>
+      <div class="grid items-center gap-3" style="grid-template-columns: 90px 1fr 56px;">
+        <label for="pitch" class="text-sm font-semibold">Pitch</label>
+        <input type="range" id="pitch" min="-50" max="50" value="0" step="5" class="range range-primary range-sm">
+        <output id="pitch-out" class="font-mono-ui text-sm text-base-content/60 text-right tabular-nums">+0Hz</output>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body gap-4">
+      <h2 class="text-xs tracking-widest uppercase text-base-content/60 font-semibold">Output</h2>
+
+      <label class="form-control w-full">
+        <span class="label-text font-semibold text-sm mb-1">
+          Output filename <span class="font-normal text-base-content/60">— leave blank for a timestamped file</span>
+        </span>
+        <input type="text" id="output-name" placeholder="tts_20260724_153000.mp3" autocomplete="off"
+               class="input input-bordered w-full font-mono-ui text-sm">
+      </label>
+
+      <label class="label cursor-pointer justify-start gap-3 px-0">
+        <input type="checkbox" id="metadata-toggle" class="toggle toggle-primary">
+        <span class="label-text text-sm font-semibold">Export word/sentence-boundary metadata (JSONL)</span>
+      </label>
+
+      <div class="flex-col gap-4 pt-1" id="metadata-fields" style="display:none;">
+        <label class="form-control w-full">
+          <span class="label-text font-semibold text-sm mb-1">Metadata filename</span>
+          <input type="text" id="metadata-name" placeholder="boundaries.jsonl" autocomplete="off"
+                 class="input input-bordered w-full font-mono-ui text-sm">
+        </label>
+        <label class="form-control w-full">
+          <span class="label-text font-semibold text-sm mb-1">Boundary granularity</span>
+          <select id="boundary-select" class="select select-bordered w-full">
+            <option value="SentenceBoundary">Sentence</option>
+            <option value="WordBoundary">Word</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <footer class="flex flex-col gap-2 text-base-content/60 text-sm border-t border-base-300 pt-5">
+    <span>
+      edge-tts-rs is an unofficial, from-scratch client for Microsoft Edge's
+      online text-to-speech protocol. Not affiliated with or endorsed by
+      Microsoft. MIT licensed.
+    </span>
+    <span>
+      <a class="link link-hover" href="https://github.com/dev-ansung/edge-tts-rs">Source</a> ·
+      <a class="link link-hover" href="https://github.com/dev-ansung/edge-tts-rs/blob/main/LICENSE">License</a>
+    </span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const REPO_URL = "git+https://github.com/dev-ansung/edge-tts-rs";
+  const DEFAULT_VOICE = "en-US-EmmaMultilingualNeural";
+  const THEME_STORAGE_KEY = "edge-tts-rs-theme";
+
+  const els = {
+    text: document.getElementById("text-input"),
+    lang: document.getElementById("lang-select"),
+    voice: document.getElementById("voice-select"),
+    voiceMeta: document.getElementById("voice-meta"),
+    rate: document.getElementById("rate"),
+    rateOut: document.getElementById("rate-out"),
+    volume: document.getElementById("volume"),
+    volumeOut: document.getElementById("volume-out"),
+    pitch: document.getElementById("pitch"),
+    pitchOut: document.getElementById("pitch-out"),
+    outputName: document.getElementById("output-name"),
+    metadataToggle: document.getElementById("metadata-toggle"),
+    metadataFields: document.getElementById("metadata-fields"),
+    metadataName: document.getElementById("metadata-name"),
+    boundarySelect: document.getElementById("boundary-select"),
+    cmdOut: document.getElementById("cmd-out"),
+    copyBtn: document.getElementById("copy-btn"),
+    cmdStatus: document.getElementById("cmd-status"),
+    themeToggle: document.getElementById("theme-toggle"),
+  };
+
+  let voicesByLocale = new Map();
+  let localeDisplay;
+  try {
+    localeDisplay = new Intl.DisplayNames(["en"], { type: "language" });
+  } catch (e) {
+    localeDisplay = null;
+  }
+
+  function localeLabel(locale) {
+    const [lang, region] = locale.split("-");
+    let name = locale;
+    try {
+      name = localeDisplay ? localeDisplay.of(lang) : locale;
+    } catch (e) { /* unknown subtag, fall back to code */ }
+    return region ? `${name} (${region})` : name;
+  }
+
+  function shellQuote(text) {
+    const escaped = text.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
+    return `"${escaped}"`;
+  }
+
+  function fmtSigned(n, unit) {
+    if (n === 0) return `+0${unit}`;
+    return `${n > 0 ? "+" : ""}${n}${unit}`;
+  }
+
+  function buildCommand() {
+    const parts = [`uvx --from ${REPO_URL} tts`];
+    const text = els.text.value || "Hello, world!";
+    parts.push(shellQuote(text));
+
+    const voice = els.voice.value;
+    if (voice && voice !== DEFAULT_VOICE) {
+      parts.push(`--voice ${voice}`);
+    }
+
+    const rate = Number(els.rate.value);
+    const volume = Number(els.volume.value);
+    const pitch = Number(els.pitch.value);
+    if (rate !== 0) parts.push(rate < 0 ? `--rate=${fmtSigned(rate, "%")}` : `--rate ${fmtSigned(rate, "%")}`);
+    if (volume !== 0) parts.push(volume < 0 ? `--volume=${fmtSigned(volume, "%")}` : `--volume ${fmtSigned(volume, "%")}`);
+    if (pitch !== 0) parts.push(pitch < 0 ? `--pitch=${fmtSigned(pitch, "Hz")}` : `--pitch ${fmtSigned(pitch, "Hz")}`);
+
+    if (els.metadataToggle.checked) {
+      const metaName = els.metadataName.value.trim() || "boundaries.jsonl";
+      parts.push(`--metadata ${metaName}`);
+      parts.push(`--boundary ${els.boundarySelect.value}`);
+    }
+
+    const outputName = els.outputName.value.trim();
+    if (outputName) parts.push(`--output ${outputName}`);
+
+    return parts.join(" ");
+  }
+
+  function render() {
+    els.rateOut.textContent = fmtSigned(Number(els.rate.value), "%");
+    els.volumeOut.textContent = fmtSigned(Number(els.volume.value), "%");
+    els.pitchOut.textContent = fmtSigned(Number(els.pitch.value), "Hz");
+    els.metadataFields.style.display = els.metadataToggle.checked ? "flex" : "none";
+    els.cmdOut.textContent = buildCommand();
+    els.copyBtn.textContent = "Copy";
+  }
+
+  function populateVoiceSelect(locale) {
+    const voices = voicesByLocale.get(locale) || [];
+    els.voice.innerHTML = "";
+    voices.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v.ShortName;
+      opt.textContent = v.ShortName;
+      if (v.ShortName === DEFAULT_VOICE) opt.selected = true;
+      els.voice.appendChild(opt);
+    });
+    updateVoiceMeta();
+  }
+
+  function updateVoiceMeta() {
+    const voices = voicesByLocale.get(els.lang.value) || [];
+    const v = voices.find((x) => x.ShortName === els.voice.value);
+    if (!v) { els.voiceMeta.textContent = ""; return; }
+    const tags = (v.VoiceTag && v.VoiceTag.VoicePersonalities) || [];
+    els.voiceMeta.textContent = `${v.Gender} · ${tags.join(", ")}`;
+  }
+
+  function applyTheme(name) {
+    document.documentElement.setAttribute("data-theme", name);
+    els.themeToggle.checked = name === "dark";
+  }
+
+  function initTheme() {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    const initial = stored === "light" || stored === "dark"
+      ? stored
+      : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+    applyTheme(initial);
+
+    els.themeToggle.addEventListener("change", () => {
+      const next = els.themeToggle.checked ? "dark" : "light";
+      applyTheme(next);
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    });
+  }
+
+  async function init() {
+    initTheme();
+
+    const res = await fetch("voices.json");
+    const voices = await res.json();
+
+    voicesByLocale = new Map();
+    voices.forEach((v) => {
+      if (!voicesByLocale.has(v.Locale)) voicesByLocale.set(v.Locale, []);
+      voicesByLocale.get(v.Locale).push(v);
+    });
+
+    const locales = Array.from(voicesByLocale.keys()).sort((a, b) =>
+      localeLabel(a).localeCompare(localeLabel(b))
+    );
+
+    const defaultLocale = "en-US";
+    locales.forEach((locale) => {
+      const opt = document.createElement("option");
+      opt.value = locale;
+      opt.textContent = `${localeLabel(locale)} — ${locale}`;
+      if (locale === defaultLocale) opt.selected = true;
+      els.lang.appendChild(opt);
+    });
+
+    populateVoiceSelect(els.lang.value);
+    render();
+
+    els.lang.addEventListener("change", () => { populateVoiceSelect(els.lang.value); render(); });
+    els.voice.addEventListener("change", () => { updateVoiceMeta(); render(); });
+    [els.text, els.rate, els.volume, els.pitch, els.outputName, els.metadataName, els.boundarySelect]
+      .forEach((el) => el.addEventListener("input", render));
+    els.metadataToggle.addEventListener("change", render);
+
+    els.copyBtn.addEventListener("click", async () => {
+      const cmd = els.cmdOut.textContent;
+      try {
+        await navigator.clipboard.writeText(cmd);
+        els.copyBtn.textContent = "Copied";
+        els.cmdStatus.textContent = "copied to clipboard";
+        setTimeout(() => {
+          els.copyBtn.textContent = "Copy";
+          els.cmdStatus.textContent = "";
+        }, 1600);
+      } catch (e) {
+        els.cmdStatus.textContent = "copy failed — select the text manually";
+      }
+    });
+  }
+
+  init().catch((err) => {
+    els.cmdOut.textContent = "Could not load voices.json — " + err.message;
+  });
+})();
+</script>
+</body>
+</html>

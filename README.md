@@ -6,18 +6,22 @@ service. No dependency on the `edge-tts` package — just `aiohttp` and
 uses.
 
 ```bash
-uvx --from git+https://github.com/CHANGEME/edge-tts-rs tts "Hello, world!"
+uvx --from git+https://github.com/dev-ansung/edge-tts-rs tts "Hello, world!"
 ```
 
 That's it. No install step, no virtualenv to manage. It drops
 `tts_20260724_153000.mp3` (a timestamped filename) in your current directory.
+
+Don't want to remember flag names or the exact voice identifiers? Use the
+[interactive command builder](https://dev-ansung.github.io/edge-tts-rs/) to
+pick a voice and tune the delivery, then copy the generated command.
 
 ## Usage
 
 ```bash
 tts "Hello, world!"                                   # timestamped mp3 in cwd
 tts "Hello" --voice en-US-GuyNeural                   # pick a voice
-tts "Hello" --rate +20% --pitch +10Hz --volume -10%   # tune delivery
+tts "Hello" --rate +20% --pitch +10Hz --volume=-10%   # tune delivery
 tts "Hello" --output greeting.mp3                     # explicit output path
 tts "Hello" --metadata boundaries.jsonl --boundary WordBoundary
 tts --list-voices                                     # print all voices as JSON

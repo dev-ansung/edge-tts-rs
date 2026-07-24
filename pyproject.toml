@@ -18,7 +18,7 @@ dependencies = [
 tts = "edgetts_cli.cli:main"
 
 [project.urls]
-Repository = "https://github.com/CHANGEME/edge-tts-rs"
+Repository = "https://github.com/dev-ansung/edge-tts-rs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/edgetts_cli"]

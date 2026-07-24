@@ -9,3 +9,6 @@ dist/
 build/
 *.mp3
 *.jsonl
+.agents/
+.claude/
+skills-lock.json
