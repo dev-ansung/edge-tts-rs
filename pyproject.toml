@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "edge-tts-rs"
+version = "0.1.0"
+description = "A from-scratch, zero-frills reimplementation of Microsoft Edge's online TTS protocol"
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "MIT" }
+dependencies = [
+    "aiohttp>=3.9",
+    "certifi>=2024.2.2",
+]
+
+[project.scripts]
+tts = "edgetts_cli.cli:main"
+
+[project.urls]
+Repository = "https://github.com/CHANGEME/edge-tts-rs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/edgetts_cli"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.14"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
