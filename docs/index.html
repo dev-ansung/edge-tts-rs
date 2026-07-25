@@ -9,139 +9,157 @@
 <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
+<body class="bg-base-100 text-base-content font-sans">
 
-<div class="max-w-2xl mx-auto p-4 sm:p-8 flex flex-col gap-6">
+<div class="container mx-auto p-4 max-w-4xl flex flex-col gap-6">
 
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">edge-tts-rs command builder</h1>
-    <input type="checkbox" value="dark" class="toggle theme-controller" aria-label="Toggle dark mode">
-  </div>
+  <!-- Header -->
+  <header class="flex items-center justify-between border-b border-base-300 pb-4">
+    <div>
+      <h1 class="text-xl font-bold">edge-tts-rs command builder</h1>
+      <p class="text-sm opacity-70">
+        Pick a voice, tune delivery parameters, and generate a <code>uvx</code> command.
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs opacity-70">Dark mode</span>
+      <input type="checkbox" value="dark" class="toggle theme-controller" aria-label="Toggle dark mode">
+    </div>
+  </header>
 
-  <p>
-    Pick a voice, tune the delivery, and copy a ready-to-run
-    <code>uvx</code> command.
-    <a class="link" href="https://github.com/dev-ansung/edge-tts-rs">Repository</a> ·
-    <a class="link" href="https://github.com/dev-ansung/edge-tts-rs/blob/main/ARCHITECTURE.md">How it works</a>
-  </p>
-
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body">
-      <h2 class="card-title">Your command</h2>
+  <!-- Output Section -->
+  <section class="card bg-base-200">
+    <div class="card-body p-4 gap-2">
+      <div class="flex justify-between items-center">
+        <h2 class="card-title text-sm font-semibold">Generated Command</h2>
+        <span id="cmd-status" class="text-xs"></span>
+      </div>
       <div class="flex gap-2">
-        <textarea id="cmd-out" rows="2" spellcheck="false" class="textarea flex-1"></textarea>
-        <button class="btn" id="copy-btn" type="button">Copy</button>
-      </div>
-      <span id="cmd-status"></span>
-    </div>
-  </div>
-
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body">
-      <h2 class="card-title">What to say</h2>
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">Text</legend>
-        <input type="text" id="text-input" value="Hello, world!" maxlength="500" autocomplete="off"
-               class="input w-full">
-      </fieldset>
-    </div>
-  </div>
-
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body">
-      <h2 class="card-title">Voice</h2>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">Language</legend>
-          <input type="text" id="lang-input" class="input w-full"
-                 list="lang-options" autocomplete="off" placeholder="English (US) — en-US">
-          <datalist id="lang-options"></datalist>
-        </fieldset>
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">Gender</legend>
-          <select id="gender-select" class="select w-full">
-            <option value="">Any</option>
-            <option value="Female">Female</option>
-            <option value="Male">Male</option>
-          </select>
-        </fieldset>
-      </div>
-
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">Voice</legend>
-        <input type="text" id="voice-input" class="input w-full"
-               list="voice-options" autocomplete="off" placeholder="en-US-EmmaMultilingualNeural">
-        <datalist id="voice-options"></datalist>
-      </fieldset>
-
-      <div id="voice-tags" class="flex flex-wrap gap-2"></div>
-      <p id="voice-friendly-name" class="font-bold"></p>
-    </div>
-  </div>
-
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body">
-      <h2 class="card-title">Delivery</h2>
-
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">Rate <span id="rate-out"></span></legend>
-        <input type="range" id="rate" min="-50" max="50" value="0" step="5" class="range w-full">
-      </fieldset>
-
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">Volume <span id="volume-out"></span></legend>
-        <input type="range" id="volume" min="-50" max="50" value="0" step="5" class="range w-full">
-      </fieldset>
-
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">Pitch <span id="pitch-out"></span></legend>
-        <input type="range" id="pitch" min="-50" max="50" value="0" step="5" class="range w-full">
-      </fieldset>
-    </div>
-  </div>
-
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body">
-      <h2 class="card-title">Output</h2>
-
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">Output filename</legend>
-        <input type="text" id="output-name" placeholder="tts_20260724_153000.mp3" autocomplete="off"
-               class="input w-full">
-        <p class="label">Leave blank for a timestamped file</p>
-      </fieldset>
-
-      <label class="label cursor-pointer justify-start gap-3">
-        <input type="checkbox" id="metadata-toggle" class="toggle">
-        <span>Export word/sentence-boundary metadata (JSONL)</span>
-      </label>
-
-      <div class="flex-col gap-4" id="metadata-fields" style="display:none;">
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">Metadata filename</legend>
-          <input type="text" id="metadata-name" placeholder="boundaries.jsonl" autocomplete="off"
-                 class="input w-full">
-        </fieldset>
-
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">Boundary granularity</legend>
-          <select id="boundary-select" class="select w-full">
-            <option value="SentenceBoundary">Sentence</option>
-            <option value="WordBoundary">Word</option>
-          </select>
-        </fieldset>
+        <textarea id="cmd-out" rows="2" spellcheck="false" readonly class="textarea font-mono text-sm flex-1"></textarea>
+        <button id="copy-btn" class="btn" type="button">Copy</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <p class="text-sm">
-    edge-tts-rs is an unofficial, from-scratch client for Microsoft Edge's
-    online text-to-speech protocol. Not affiliated with or endorsed by
-    Microsoft. MIT licensed.
-    <a class="link" href="https://github.com/dev-ansung/edge-tts-rs">Source</a> ·
-    <a class="link" href="https://github.com/dev-ansung/edge-tts-rs/blob/main/LICENSE">License</a>
-  </p>
+  <!-- Main Controls Grid -->
+  <main class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Left Column: Input & Files -->
+    <div class="flex flex-col gap-6">
+      <!-- Input Text -->
+      <section class="card bg-base-100 border border-base-300">
+        <div class="card-body p-4 gap-3">
+          <h2 class="card-title text-sm font-semibold border-b border-base-200 pb-2">Text</h2>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Input Text</legend>
+            <textarea id="text-input" rows="3" maxlength="500" autocomplete="off" class="textarea w-full" placeholder="Hello, world!">Hello, world!</textarea>
+          </fieldset>
+        </div>
+      </section>
+
+      <!-- Output Options -->
+      <section class="card bg-base-100 border border-base-300">
+        <div class="card-body p-4 gap-3">
+          <h2 class="card-title text-sm font-semibold border-b border-base-200 pb-2">Output & Metadata</h2>
+          
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Output filename</legend>
+            <input type="text" id="output-name" placeholder="tts_20260724_153000.mp3" autocomplete="off" class="input w-full">
+            <p class="label opacity-70">Leave blank for a timestamped file</p>
+          </fieldset>
+
+          <label class="flex items-center gap-3 cursor-pointer mt-2">
+            <input type="checkbox" id="metadata-toggle" class="toggle">
+            <span>Export metadata (JSONL)</span>
+          </label>
+
+          <div id="metadata-fields" class="flex flex-col gap-3 pt-2" style="display:none;">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Metadata filename</legend>
+              <input type="text" id="metadata-name" placeholder="boundaries.jsonl" autocomplete="off" class="input w-full">
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Boundary granularity</legend>
+              <select id="boundary-select" class="select w-full">
+                <option value="SentenceBoundary">Sentence</option>
+                <option value="WordBoundary">Word</option>
+              </select>
+            </fieldset>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Voice & Audio Delivery -->
+    <div class="flex flex-col gap-6">
+      <!-- Voice Options -->
+      <section class="card bg-base-100 border border-base-300">
+        <div class="card-body p-4 gap-3">
+          <h2 class="card-title text-sm font-semibold border-b border-base-200 pb-2">Voice</h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Language</legend>
+              <input type="text" id="lang-input" class="input w-full" list="lang-options" autocomplete="off" placeholder="English (US) — en-US">
+              <datalist id="lang-options"></datalist>
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Gender</legend>
+              <select id="gender-select" class="select w-full">
+                <option value="">Any</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+            </fieldset>
+          </div>
+
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Voice</legend>
+            <input type="text" id="voice-input" class="input w-full" list="voice-options" autocomplete="off" placeholder="en-US-EmmaMultilingualNeural">
+            <datalist id="voice-options"></datalist>
+          </fieldset>
+
+          <div id="voice-tags" class="flex flex-wrap gap-1 mt-1"></div>
+          <p id="voice-friendly-name" class="text-sm font-semibold"></p>
+        </div>
+      </section>
+
+      <!-- Delivery Parameters -->
+      <section class="card bg-base-100 border border-base-300">
+        <div class="card-body p-4 gap-3">
+          <h2 class="card-title text-sm font-semibold border-b border-base-200 pb-2">Delivery</h2>
+
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Rate <span id="rate-out" class="font-mono"></span></legend>
+            <input type="range" id="rate" min="-50" max="50" value="0" step="5" class="range range-sm w-full">
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Volume <span id="volume-out" class="font-mono"></span></legend>
+            <input type="range" id="volume" min="-50" max="50" value="0" step="5" class="range range-sm w-full">
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Pitch <span id="pitch-out" class="font-mono"></span></legend>
+            <input type="range" id="pitch" min="-50" max="50" value="0" step="5" class="range range-sm w-full">
+          </fieldset>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer p-4 bg-base-200 rounded-box text-xs flex justify-between items-center">
+    <span>edge-tts-rs</span>
+    <div class="flex gap-4">
+      <a class="link link-hover" href="https://github.com/dev-ansung/edge-tts-rs">Repository</a>
+      <a class="link link-hover" href="https://github.com/dev-ansung/edge-tts-rs/blob/main/ARCHITECTURE.md">How it works</a>
+      <a class="link link-hover" href="https://github.com/dev-ansung/edge-tts-rs/blob/main/LICENSE">License</a>
+    </div>
+  </footer>
 
 </div>
 
@@ -248,16 +266,11 @@
 
   const DEFAULT_LOCALE = "en-US";
 
-  // the language input's value is a full label like "English (US) — en-US";
-  // pull the locale code back out (it's always the trailing token after the em dash)
   function localeFromInput(value) {
     const match = value.match(/([a-zA-Z]{2,3}(?:-[a-zA-Z0-9]+)+)\s*$/);
     return match ? match[1] : null;
   }
 
-  // inputs are left blank (placeholder shows the default as ghost text) so the
-  // native datalist dropdown arrow lists every option instead of just the
-  // current value's match; these resolve what's *effectively* selected.
   function effectiveLocale() {
     const typed = els.lang.value.trim();
     if (!typed) return DEFAULT_LOCALE;
@@ -299,9 +312,6 @@
     return null;
   }
 
-  // Category/Personality are fixed catalog tags describing the voice, not
-  // configurable synthesis options - show them read-only, alongside the
-  // friendly name (hover reveals the raw internal Name).
   function updateVoiceDetails() {
     const v = findVoice(effectiveVoice());
 
@@ -317,13 +327,13 @@
 
     categories.forEach((label) => {
       const badge = document.createElement("div");
-      badge.className = "badge";
+      badge.className = "badge badge-sm";
       badge.textContent = label;
       els.voiceTags.appendChild(badge);
     });
     personalities.forEach((label) => {
       const badge = document.createElement("div");
-      badge.className = "badge badge-neutral";
+      badge.className = "badge badge-sm badge-neutral";
       badge.textContent = label;
       els.voiceTags.appendChild(badge);
     });
