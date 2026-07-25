@@ -22,7 +22,9 @@ def build_parser() -> argparse.ArgumentParser:
         prog="tts",
         description="Synthesize speech using Microsoft Edge's online TTS service.",
     )
-    parser.add_argument("text", nargs="?", help="Text to speak")
+    parser.add_argument(
+        "text", nargs="?", help="Text to speak (reads from stdin if omitted and piped)"
+    )
     parser.add_argument(
         "--voice", default=DEFAULT_VOICE, help=f"Voice name (default: {DEFAULT_VOICE})"
     )
@@ -111,6 +113,9 @@ async def run(args: argparse.Namespace) -> None:
 def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if not args.list_voices and not args.text and not sys.stdin.isatty():
+        args.text = sys.stdin.read().strip()
 
     if not args.list_voices and not args.text:
         parser.error("the following arguments are required: text (unless --list-voices is given)")

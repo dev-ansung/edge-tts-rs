@@ -57,7 +57,8 @@ def test_parser_accepts_all_flags():
     assert args.proxy == "http://localhost:8080"
 
 
-def test_main_errors_when_text_missing_and_not_listing_voices(capsys):
+def test_main_errors_when_text_missing_and_not_listing_voices(capsys, monkeypatch):
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: True)
     try:
         cli.main([])
         assert False, "expected SystemExit"
@@ -65,3 +66,17 @@ def test_main_errors_when_text_missing_and_not_listing_voices(capsys):
         assert e.code == 2
     captured = capsys.readouterr()
     assert "text" in captured.err
+
+
+def test_main_reads_text_from_piped_stdin(monkeypatch):
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: False)
+    monkeypatch.setattr(cli.sys.stdin, "read", lambda: "piped text\n")
+
+    captured = {}
+
+    async def fake_run(args):
+        captured["text"] = args.text
+
+    monkeypatch.setattr(cli, "run", fake_run)
+    cli.main([])
+    assert captured["text"] == "piped text"
