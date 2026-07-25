@@ -50,6 +50,7 @@
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body">
       <h2 class="card-title">Voice</h2>
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <fieldset class="fieldset">
           <legend class="fieldset-legend">Language</legend>
@@ -58,13 +59,24 @@
           <datalist id="lang-options"></datalist>
         </fieldset>
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Voice</legend>
-          <input type="text" id="voice-input" class="input w-full"
-                 list="voice-options" autocomplete="off" placeholder="en-US-EmmaMultilingualNeural">
-          <datalist id="voice-options"></datalist>
+          <legend class="fieldset-legend">Gender</legend>
+          <select id="gender-select" class="select w-full">
+            <option value="">Any</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+          </select>
         </fieldset>
       </div>
-      <span id="voice-meta"></span>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Voice</legend>
+        <input type="text" id="voice-input" class="input w-full"
+               list="voice-options" autocomplete="off" placeholder="en-US-EmmaMultilingualNeural">
+        <datalist id="voice-options"></datalist>
+      </fieldset>
+
+      <div id="voice-tags" class="flex flex-wrap gap-2"></div>
+      <p id="voice-friendly-name" class="font-bold"></p>
     </div>
   </div>
 
@@ -144,9 +156,11 @@
     text: document.getElementById("text-input"),
     lang: document.getElementById("lang-input"),
     langOptions: document.getElementById("lang-options"),
+    gender: document.getElementById("gender-select"),
     voice: document.getElementById("voice-input"),
     voiceOptions: document.getElementById("voice-options"),
-    voiceMeta: document.getElementById("voice-meta"),
+    voiceTags: document.getElementById("voice-tags"),
+    voiceFriendlyName: document.getElementById("voice-friendly-name"),
     rate: document.getElementById("rate"),
     rateOut: document.getElementById("rate-out"),
     volume: document.getElementById("volume"),
@@ -199,7 +213,7 @@
     const text = els.text.value || "Hello, world!";
     parts.push(shellQuote(text));
 
-    const voice = els.voice.value;
+    const voice = effectiveVoice();
     if (voice && voice !== DEFAULT_VOICE) {
       parts.push(`--voice ${voice}`);
     }
@@ -232,6 +246,8 @@
     els.copyBtn.textContent = "Copy";
   }
 
+  const DEFAULT_LOCALE = "en-US";
+
   // the language input's value is a full label like "English (US) — en-US";
   // pull the locale code back out (it's always the trailing token after the em dash)
   function localeFromInput(value) {
@@ -239,31 +255,81 @@
     return match ? match[1] : null;
   }
 
-  function populateVoiceOptions(locale) {
-    const voices = voicesByLocale.get(locale) || [];
+  // inputs are left blank (placeholder shows the default as ghost text) so the
+  // native datalist dropdown arrow lists every option instead of just the
+  // current value's match; these resolve what's *effectively* selected.
+  function effectiveLocale() {
+    const typed = els.lang.value.trim();
+    if (!typed) return DEFAULT_LOCALE;
+    const locale = localeFromInput(typed);
+    return locale && voicesByLocale.has(locale) ? locale : DEFAULT_LOCALE;
+  }
+
+  function voicesForCurrentFilter() {
+    const voices = voicesByLocale.get(effectiveLocale()) || [];
+    const gender = els.gender.value;
+    return gender ? voices.filter((v) => v.Gender === gender) : voices;
+  }
+
+  function effectiveVoice() {
+    const typed = els.voice.value.trim();
+    const voices = voicesForCurrentFilter();
+    if (typed && voices.some((v) => v.ShortName === typed)) return typed;
+    if (voices.some((v) => v.ShortName === DEFAULT_VOICE)) return DEFAULT_VOICE;
+    return voices.length ? voices[0].ShortName : "";
+  }
+
+  function populateVoiceOptions() {
+    const voices = voicesForCurrentFilter();
     els.voiceOptions.innerHTML = "";
     voices.forEach((v) => {
       const opt = document.createElement("option");
       opt.value = v.ShortName;
       els.voiceOptions.appendChild(opt);
     });
-    if (voices.some((v) => v.ShortName === DEFAULT_VOICE)) {
-      els.voice.value = DEFAULT_VOICE;
-    } else if (voices.length) {
-      els.voice.value = voices[0].ShortName;
-    } else {
-      els.voice.value = "";
-    }
-    updateVoiceMeta();
+    els.voice.placeholder = effectiveVoice() || "No matching voice";
+    updateVoiceDetails();
   }
 
-  function updateVoiceMeta() {
-    const locale = localeFromInput(els.lang.value);
-    const voices = voicesByLocale.get(locale) || [];
-    const v = voices.find((x) => x.ShortName === els.voice.value);
-    if (!v) { els.voiceMeta.textContent = ""; return; }
-    const tags = (v.VoiceTag && v.VoiceTag.VoicePersonalities) || [];
-    els.voiceMeta.textContent = `${v.Gender} · ${tags.join(", ")}`;
+  function findVoice(shortName) {
+    for (const voices of voicesByLocale.values()) {
+      const v = voices.find((x) => x.ShortName === shortName);
+      if (v) return v;
+    }
+    return null;
+  }
+
+  // Category/Personality are fixed catalog tags describing the voice, not
+  // configurable synthesis options - show them read-only, alongside the
+  // friendly name (hover reveals the raw internal Name).
+  function updateVoiceDetails() {
+    const v = findVoice(effectiveVoice());
+
+    els.voiceTags.innerHTML = "";
+    els.voiceFriendlyName.textContent = "";
+    els.voiceFriendlyName.removeAttribute("title");
+
+    if (!v) return;
+
+    const tag = v.VoiceTag || {};
+    const categories = (tag.ContentCategories || []).map((c) => c.trim());
+    const personalities = tag.VoicePersonalities || [];
+
+    categories.forEach((label) => {
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = label;
+      els.voiceTags.appendChild(badge);
+    });
+    personalities.forEach((label) => {
+      const badge = document.createElement("div");
+      badge.className = "badge badge-neutral";
+      badge.textContent = label;
+      els.voiceTags.appendChild(badge);
+    });
+
+    els.voiceFriendlyName.textContent = v.FriendlyName || "";
+    els.voiceFriendlyName.title = v.Name || "";
   }
 
   async function init() {
@@ -280,29 +346,27 @@
       localeLabel(a).localeCompare(localeLabel(b))
     );
 
-    const defaultLocale = "en-US";
     let defaultLabel = "";
     locales.forEach((locale) => {
       const label = `${localeLabel(locale)} — ${locale}`;
       const opt = document.createElement("option");
       opt.value = label;
       els.langOptions.appendChild(opt);
-      if (locale === defaultLocale) defaultLabel = label;
+      if (locale === DEFAULT_LOCALE) defaultLabel = label;
     });
+    els.lang.placeholder = defaultLabel;
 
-    els.lang.value = defaultLabel;
-    populateVoiceOptions(defaultLocale);
+    populateVoiceOptions();
     render();
 
     els.lang.addEventListener("input", () => {
-      const locale = localeFromInput(els.lang.value);
-      if (locale && voicesByLocale.has(locale)) {
-        populateVoiceOptions(locale);
-      }
+      populateVoiceOptions();
       render();
     });
-    els.voice.addEventListener("input", () => { updateVoiceMeta(); render(); });
-    [els.text, els.rate, els.volume, els.pitch, els.outputName, els.metadataName, els.boundarySelect]
+    els.gender.addEventListener("change", () => { populateVoiceOptions(); render(); });
+    els.voice.addEventListener("input", () => { updateVoiceDetails(); render(); });
+    [els.text, els.rate, els.volume, els.pitch,
+     els.outputName, els.metadataName, els.boundarySelect]
       .forEach((el) => el.addEventListener("input", render));
     els.metadataToggle.addEventListener("change", render);
 
