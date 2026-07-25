@@ -265,21 +265,24 @@
   }
 
   const DEFAULT_LOCALE = "en-US";
+  let allVoices = [];
 
   function localeFromInput(value) {
     const match = value.match(/([a-zA-Z]{2,3}(?:-[a-zA-Z0-9]+)+)\s*$/);
     return match ? match[1] : null;
   }
 
+  // returns null when Language is blank - meaning "no locale filter", not en-US
   function effectiveLocale() {
     const typed = els.lang.value.trim();
-    if (!typed) return DEFAULT_LOCALE;
+    if (!typed) return null;
     const locale = localeFromInput(typed);
-    return locale && voicesByLocale.has(locale) ? locale : DEFAULT_LOCALE;
+    return locale && voicesByLocale.has(locale) ? locale : null;
   }
 
   function voicesForCurrentFilter() {
-    const voices = voicesByLocale.get(effectiveLocale()) || [];
+    const locale = effectiveLocale();
+    const voices = locale ? voicesByLocale.get(locale) || [] : allVoices;
     const gender = els.gender.value;
     return gender ? voices.filter((v) => v.Gender === gender) : voices;
   }
@@ -345,6 +348,7 @@
   async function init() {
     const res = await fetch("voices.json");
     const voices = await res.json();
+    allVoices = voices;
 
     voicesByLocale = new Map();
     voices.forEach((v) => {
